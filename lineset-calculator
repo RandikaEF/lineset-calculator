@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lineset Cost Calculator</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; background:#0b0c10; color:#e8e8ea; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 18px; }
+    .card { background:#15171c; border:1px solid #22252c; border-radius:14px; padding:16px; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .grid { display:grid; gap:12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
+    label { font-size: 12px; color:#a8adb8; display:block; margin-bottom:6px; }
+    select, input {
+      width:100%; padding:10px 10px; border-radius:10px; border:1px solid #2a2f39;
+      background:#0f1115; color:#e8e8ea; font-size:14px; outline:none;
+    }
+    input[type="number"] { appearance: textfield; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill { background:#0f1115; border:1px dashed #2a2f39; padding:8px 10px; border-radius:999px; font-size:13px; color:#cfd3dc; }
+    .results { margin-top: 14px; display:grid; gap:10px; grid-template-columns: 1fr 1fr; }
+    .result { background:#0f1115; border:1px solid #22252c; border-radius:12px; padding:12px; }
+    .result .title { font-size:12px; color:#a8adb8; }
+    .result .value { font-size:18px; margin-top:4px; font-weight:600; }
+    .total { grid-column: 1 / -1; border:1px solid #3a4050; }
+    .muted { font-size: 12px; color:#7f8592; margin-top:6px; }
+    .footer { margin-top:10px; font-size:11px; color:#7f8592; }
+    @media (max-width:720px){
+      .grid { grid-template-columns: 1fr; }
+      .results { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Lineset Cost Calculator (Cost-Only)</h1>
+
+      <div class="grid">
+        <div>
+          <label for="suction">Suction Pipe Size</label>
+          <select id="suction"></select>
+        </div>
+
+        <div>
+          <label for="liquid">Liquid Pipe Size</label>
+          <select id="liquid"></select>
+        </div>
+
+        <div>
+          <label for="length">Length (ft)</label>
+          <input id="length" type="number" min="0" step="0.1" value="10" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <div class="pill" id="suctionUnit"></div>
+        <div class="pill" id="suctionInsUnit"></div>
+        <div class="pill" id="liquidUnit"></div>
+      </div>
+
+      <div class="results">
+        <div class="result">
+          <div class="title">Suction Copper Cost</div>
+          <div class="value" id="suctionCost">$0.00</div>
+        </div>
+        <div class="result">
+          <div class="title">Suction Insulation Cost (Armaflex)</div>
+          <div class="value" id="insulationCost">$0.00</div>
+        </div>
+        <div class="result">
+          <div class="title">Liquid Copper Cost</div>
+          <div class="value" id="liquidCost">$0.00</div>
+        </div>
+        <div class="result total">
+          <div class="title">Total Lineset Cost</div>
+          <div class="value" id="totalCost">$0.00</div>
+          <div class="muted" id="breakdown"></div>
+        </div>
+      </div>
+
+      <div class="footer">
+        Update prices in the DATA section below when supplier costs change.
+      </div>
+    </div>
+  </div>
+
+<script>
+/** =========================
+ *  DATA (cost per foot)
+ *  Edit ONLY these numbers.
+ *  ========================= */
+const COPPER_COST_PER_FT = {
+  '3/8"': 3.98,
+  '1/2"': 3.98,
+  '5/8"': 7.09,
+  '3/4"': 9.69,
+  '7/8"': 11.22,
+  '1-1/8"': 16.21,
+  '1-3/8"': 21.71,
+  '1-5/8"': 28.11,
+  '2-1/8"': 43.35,
+  '2-5/8"': 63.36,
+  '3-1/8"': 85.90,
+  '3-5/8"': 113.18,
+  '4-1/8"': 142.74
+};
+
+const ARMAFLEX_COST_PER_FT = {
+  '3/8"': 1.07,
+  '1/2"': 1.14,
+  '5/8"': 1.26,
+  '3/4"': 1.30,
+  '7/8"': 1.39,
+  '1-1/8"': 1.56,
+  '1-3/8"': 1.72,
+  '1-5/8"': 1.96,
+  '2-1/8"': 2.51,
+  '2-5/8"': 3.40,
+  '3-1/8"': 4.00,
+  '3-5/8"': 5.26,
+  '4-1/8"': 5.84
+};
+
+/** Default size lists for dropdowns */
+const SUCTION_OPTIONS = Object.keys(COPPER_COST_PER_FT);
+const LIQUID_OPTIONS = Object.keys(COPPER_COST_PER_FT);
+
+/** =========================
+ *  UI + CALC
+ *  ========================= */
+const suctionSel = document.getElementById('suction');
+const liquidSel  = document.getElementById('liquid');
+const lengthInp  = document.getElementById('length');
+
+const suctionUnitPill = document.getElementById('suctionUnit');
+const suctionInsUnitPill = document.getElementById('suctionInsUnit');
+const liquidUnitPill = document.getElementById('liquidUnit');
+
+const suctionCostEl = document.getElementById('suctionCost');
+const insulationCostEl = document.getElementById('insulationCost');
+const liquidCostEl = document.getElementById('liquidCost');
+const totalCostEl = document.getElementById('totalCost');
+const breakdownEl = document.getElementById('breakdown');
+
+function money(n){
+  if (!isFinite(n)) return '$0.00';
+  return n.toLocaleString('en-CA', { style:'currency', currency:'CAD' });
+}
+
+function fillSelect(selectEl, options){
+  selectEl.innerHTML = options.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function calc(){
+  const suctionSize = suctionSel.value;
+  const liquidSize  = liquidSel.value;
+  const length = Math.max(0, parseFloat(lengthInp.value || 0));
+
+  const suctionUnit = COPPER_COST_PER_FT[suctionSize] ?? 0;
+  const liquidUnit  = COPPER_COST_PER_FT[liquidSize] ?? 0;
+  const insUnit     = ARMAFLEX_COST_PER_FT[suctionSize] ?? 0; // insulation matched to suction size
+
+  const suctionCost = suctionUnit * length;
+  const liquidCost  = liquidUnit * length;
+  const insCost     = insUnit * length;
+
+  const total = suctionCost + liquidCost + insCost;
+
+  suctionUnitPill.textContent = `Suction Copper: ${suctionSize} @ ${money(suctionUnit)}/ft`;
+  suctionInsUnitPill.textContent = `Suction Insulation: ${suctionSize} @ ${money(insUnit)}/ft`;
+  liquidUnitPill.textContent = `Liquid Copper: ${liquidSize} @ ${money(liquidUnit)}/ft`;
+
+  suctionCostEl.textContent = money(suctionCost);
+  insulationCostEl.textContent = money(insCost);
+  liquidCostEl.textContent = money(liquidCost);
+  totalCostEl.textContent = money(total);
+
+  breakdownEl.textContent =
+    `${length} ft × (${money(suctionUnit)}/ft suction + ${money(insUnit)}/ft insulation + ${money(liquidUnit)}/ft liquid)`;
+}
+
+fillSelect(suctionSel, SUCTION_OPTIONS);
+fillSelect(liquidSel, LIQUID_OPTIONS);
+
+// set sensible defaults
+suctionSel.value = '7/8"';
+liquidSel.value = '3/8"';
+
+[suctionSel, liquidSel, lengthInp].forEach(el => el.addEventListener('input', calc));
+calc();
+</script>
+</body>
+</html>
