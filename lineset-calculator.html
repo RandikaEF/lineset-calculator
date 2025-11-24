@@ -8,27 +8,25 @@
     :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
     body { margin: 0; background:#0b0c10; color:#e8e8ea; }
     .wrap { max-width: 860px; margin: 0 auto; padding: 18px; }
-    .card { background:#15171c; border:1px solid #22252c; border-radius:14px; padding:16px; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+    .card { background:#15171c; border:1px solid #22252c; border-radius:14px; padding:16px;
+            box-shadow: 0 6px 18px rgba(0,0,0,.35); }
     h1 { font-size: 20px; margin: 0 0 12px; }
     .grid { display:grid; gap:12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
     label { font-size: 12px; color:#a8adb8; display:block; margin-bottom:6px; }
     select, input {
-      width:100%; padding:10px 10px; border-radius:10px; border:1px solid #2a2f39;
+      width:100%; padding:10px; border-radius:10px; border:1px solid #2a2f39;
       background:#0f1115; color:#e8e8ea; font-size:14px; outline:none;
     }
-    input[type="number"] { appearance: textfield; }
-    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .pill { background:#0f1115; border:1px dashed #2a2f39; padding:8px 10px; border-radius:999px; font-size:13px; color:#cfd3dc; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+    .pill { background:#0f1115; border:1px dashed #2a2f39; padding:8px 10px; border-radius:999px;
+            font-size:13px; color:#cfd3dc; }
     .results { margin-top: 14px; display:grid; gap:10px; grid-template-columns: 1fr 1fr; }
     .result { background:#0f1115; border:1px solid #22252c; border-radius:12px; padding:12px; }
     .result .title { font-size:12px; color:#a8adb8; }
     .result .value { font-size:18px; margin-top:4px; font-weight:600; }
     .total { grid-column: 1 / -1; border:1px solid #3a4050; }
     .muted { font-size: 12px; color:#7f8592; margin-top:6px; }
-    @media (max-width:720px){
-      .grid { grid-template-columns: 1fr; }
-      .results { grid-template-columns: 1fr; }
-    }
+    @media (max-width:720px){ .grid{grid-template-columns:1fr;} .results{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -41,19 +39,17 @@
           <label>Suction Pipe Size</label>
           <select id="suction"></select>
         </div>
-
         <div>
           <label>Liquid Pipe Size</label>
           <select id="liquid"></select>
         </div>
-
         <div>
           <label>Length (ft)</label>
           <input id="length" type="number" min="0" step="0.1" value="10" />
         </div>
       </div>
 
-      <div class="row" style="margin-top:12px;">
+      <div class="row">
         <div class="pill" id="suctionUnit"></div>
         <div class="pill" id="suctionInsUnit"></div>
         <div class="pill" id="liquidUnit"></div>
@@ -87,120 +83,136 @@
 
 <script>
 /** =======================================================
- *  DATA MAPS — COST PER FOOT
- *  (Safe: supports $, commas, strings, floats)
+ *  DATA (you can keep normal quotes here)
  *  ======================================================= */
-const COPPER_COST_PER_FT = {
-  '3/8"': "3.98",
-  '1/2"': "3.98",
-  '5/8"': "7.09",
-  '3/4"': "9.69",
-  '7/8"': "11.22",
-  '1-1/8"': "16.21",
-  '1-3/8"': "21.71",
-  '1-5/8"': "28.11",
-  '2-1/8"': "43.35",
-  '2-5/8"': "63.36",
-  '3-1/8"': "85.90",
-  '3-5/8"': "113.18",
-  '4-1/8"': "142.74"
+const COPPER_COST_PER_FT_RAW = {
+  '3/8"': 3.98,
+  '1/2"': 3.98,
+  '5/8"': 7.09,
+  '3/4"': 9.69,
+  '7/8"': 11.22,
+  '1-1/8"': 16.21,
+  '1-3/8"': 21.71,
+  '1-5/8"': 28.11,
+  '2-1/8"': 43.35,
+  '2-5/8"': 63.36,
+  '3-1/8"': 85.90,
+  '3-5/8"': 113.18,
+  '4-1/8"': 142.74
 };
 
-const ARMAFLEX_COST_PER_FT = {
-  '3/8"': "1.07",
-  '1/2"': "1.14",
-  '5/8"': "1.26",
-  '3/4"': "1.30",
-  '7/8"': "1.39",
-  '1-1/8"': "1.56",
-  '1-3/8"': "1.72",
-  '1-5/8"': "1.96",
-  '2-1/8"': "2.51",
-  '2-5/8"': "3.40",
-  '3-1/8"': "4.00",
-  '3-5/8"': "5.26",
-  '4-1/8"': "5.84"
+const ARMAFLEX_COST_PER_FT_RAW = {
+  '3/8"': 1.07,
+  '1/2"': 1.14,
+  '5/8"': 1.26,
+  '3/4"': 1.30,
+  '7/8"': 1.39,
+  '1-1/8"': 1.56,
+  '1-3/8"': 1.72,
+  '1-5/8"': 1.96,
+  '2-1/8"': 2.51,
+  '2-5/8"': 3.40,
+  '3-1/8"': 4.00,
+  '3-5/8"': 5.26,
+  '4-1/8"': 5.84
 };
 
 /** =======================================================
- *  NORMALIZATION FUNCTIONS
- *  Fix curly quotes, inch symbols, fraction slash, odd dashes
+ *  CANONICALIZATION
+ *  Converts ANY size text into a stable key.
+ *  Example:
+ *   1-1/8″  -> "1-1/8"
+ *   1–1⁄8"  -> "1-1/8"
+ *   7/8"    -> "7/8"
  *  ======================================================= */
-function normalizeSize(s){
+function canonicalSize(s){
   return String(s || "")
     .trim()
-    .replace(/″/g, '"')      // U+2033 double-prime → "
-    .replace(/“|”/g, '"')    // curly quotes → "
-    .replace(/′/g, "'")      // prime → '
-    .replace(/’/g, "'")
-    .replace(/⁄/g, "/")      // fraction slash → /
-    .replace(/\u2011|\u2012|\u2013|\u2014/g, "-") // nonstandard dashes → -
-    .replace(/\s+/g, ' ');
+    // normalize quotes/primes
+    .replace(/″|“|”/g, '"')
+    .replace(/′|’/g, "'")
+    // normalize slashes/dashes
+    .replace(/⁄/g, "/")
+    .replace(/\u2011|\u2012|\u2013|\u2014/g, "-")
+    // strip everything except digits, /, -
+    .replace(/[^0-9\/\-]/g, "");
 }
 
-/** Sanitize numbers: remove $, commas, spaces */
+/** Sanitizes numbers if you ever paste $ or commas later */
 function parseCost(v){
   if (typeof v === "number") return v;
   const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Safe lookup: normalize size and match */
-function getCost(map, size){
-  const key = normalizeSize(size);
-  if (key in map) return parseCost(map[key]);
-
-  console.warn("⚠ Size not found:", key);
-  return 0;
+/** Build canonical maps once */
+function buildCanonicalMap(rawMap){
+  const m = {};
+  for (const [k, v] of Object.entries(rawMap)){
+    m[canonicalSize(k)] = parseCost(v);
+  }
+  return m;
 }
 
+const COPPER = buildCanonicalMap(COPPER_COST_PER_FT_RAW);
+const ARMAFLEX = buildCanonicalMap(ARMAFLEX_COST_PER_FT_RAW);
+
 /** =======================================================
- *  UI REFERENCES
+ *  UI
  *  ======================================================= */
 const suctionSel = document.getElementById('suction');
 const liquidSel  = document.getElementById('liquid');
 const lengthInp  = document.getElementById('length');
 
-const suctionUnitPill     = document.getElementById('suctionUnit');
-const suctionInsUnitPill  = document.getElementById('suctionInsUnit');
-const liquidUnitPill      = document.getElementById('liquidUnit');
+const suctionUnitPill    = document.getElementById('suctionUnit');
+const suctionInsUnitPill = document.getElementById('suctionInsUnit');
+const liquidUnitPill     = document.getElementById('liquidUnit');
 
-const suctionCostEl      = document.getElementById('suctionCost');
-const insulationCostEl   = document.getElementById('insulationCost');
-const liquidCostEl       = document.getElementById('liquidCost');
-const totalCostEl        = document.getElementById('totalCost');
-const breakdownEl        = document.getElementById('breakdown');
+const suctionCostEl    = document.getElementById('suctionCost');
+const insulationCostEl = document.getElementById('insulationCost');
+const liquidCostEl     = document.getElementById('liquidCost');
+const totalCostEl      = document.getElementById('totalCost');
+const breakdownEl      = document.getElementById('breakdown');
 
-/** Format money */
 function money(n){
   return Number(n).toLocaleString('en-CA', { style:'currency', currency:'CAD' });
 }
 
-/** Fill dropdowns automatically */
 function fillSelect(selectEl, options){
   selectEl.innerHTML = options.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
-/** =======================================================
- *  CALCULATION LOGIC
- *  ======================================================= */
+/** Use the RAW keys for nice display */
+const SIZE_OPTIONS = Object.keys(COPPER_COST_PER_FT_RAW);
+fillSelect(suctionSel, SIZE_OPTIONS);
+fillSelect(liquidSel, SIZE_OPTIONS);
+
+suctionSel.value = '7/8"';
+liquidSel.value  = '3/8"';
+
+/** Lookup by canonical key */
+function getCost(map, sizeText){
+  const key = canonicalSize(sizeText);
+  return map[key] ?? 0;
+}
+
 function calc(){
-  const suctionSize = suctionSel.value;
-  const liquidSize  = liquidSel.value;
+  const suctionSizeText = suctionSel.value;
+  const liquidSizeText  = liquidSel.value;
   const length = Math.max(0, parseFloat(lengthInp.value || 0));
 
-  const suctionUnit = getCost(COPPER_COST_PER_FT, suctionSize);
-  const liquidUnit  = getCost(COPPER_COST_PER_FT, liquidSize);
-  const insUnit     = getCost(ARMAFLEX_COST_PER_FT, suctionSize);
+  const suctionUnit = getCost(COPPER, suctionSizeText);
+  const liquidUnit  = getCost(COPPER, liquidSizeText);
+  const insUnit     = getCost(ARMAFLEX, suctionSizeText);
 
   const suctionCost = suctionUnit * length;
   const liquidCost  = liquidUnit * length;
   const insCost     = insUnit * length;
   const total       = suctionCost + liquidCost + insCost;
 
-  suctionUnitPill.textContent     = `Suction Copper: ${normalizeSize(suctionSize)} @ ${money(suctionUnit)}/ft`;
-  suctionInsUnitPill.textContent  = `Suction Insulation: ${normalizeSize(suctionSize)} @ ${money(insUnit)}/ft`;
-  liquidUnitPill.textContent      = `Liquid Copper: ${normalizeSize(liquidSize)} @ ${money(liquidUnit)}/ft`;
+  suctionUnitPill.textContent    = `Suction Copper: ${suctionSizeText} @ ${money(suctionUnit)}/ft`;
+  suctionInsUnitPill.textContent = `Suction Insulation: ${suctionSizeText} @ ${money(insUnit)}/ft`;
+  liquidUnitPill.textContent     = `Liquid Copper: ${liquidSizeText} @ ${money(liquidUnit)}/ft`;
 
   suctionCostEl.textContent    = money(suctionCost);
   insulationCostEl.textContent = money(insCost);
@@ -210,17 +222,6 @@ function calc(){
   breakdownEl.textContent =
     `${length} ft × (${money(suctionUnit)}/ft suction + ${money(insUnit)}/ft insulation + ${money(liquidUnit)}/ft liquid)`;
 }
-
-/** =======================================================
- *  INIT
- *  ======================================================= */
-const SIZE_OPTIONS = Object.keys(COPPER_COST_PER_FT);
-
-fillSelect(suctionSel, SIZE_OPTIONS);
-fillSelect(liquidSel, SIZE_OPTIONS);
-
-suctionSel.value = '7/8"';
-liquidSel.value  = '3/8"';
 
 [suctionSel, liquidSel, lengthInp].forEach(el =>
   el.addEventListener('input', calc)
