@@ -123,9 +123,19 @@ const ARMAFLEX_COST_PER_FT = {
   '4-1/8"': 5.84
 };
 
+/** Normalize dropdown text to match keys */
+function normalizeSize(s){
+  return String(s || "")
+    .trim()
+    .replace(/”|“/g, '"')   // curly double quotes -> "
+    .replace(/’/g, "'")     // curly single quote -> '
+    .replace(/\u2011|\u2013|\u2014/g, '-') // nonstandard dashes -> -
+    .replace(/\s+/g, ' ');  // collapse weird spacing
+}
+
 /** Default size lists for dropdowns */
 const SUCTION_OPTIONS = Object.keys(COPPER_COST_PER_FT);
-const LIQUID_OPTIONS = Object.keys(COPPER_COST_PER_FT);
+const LIQUID_OPTIONS  = Object.keys(COPPER_COST_PER_FT);
 
 /** =========================
  *  UI + CALC
@@ -154,8 +164,12 @@ function fillSelect(selectEl, options){
 }
 
 function calc(){
-  const suctionSize = suctionSel.value;
-  const liquidSize  = liquidSel.value;
+  const suctionSizeRaw = suctionSel.value;
+  const liquidSizeRaw  = liquidSel.value;
+
+  const suctionSize = normalizeSize(suctionSizeRaw);
+  const liquidSize  = normalizeSize(liquidSizeRaw);
+
   const length = Math.max(0, parseFloat(lengthInp.value || 0));
 
   const suctionUnit = COPPER_COST_PER_FT[suctionSize] ?? 0;
@@ -184,12 +198,13 @@ function calc(){
 fillSelect(suctionSel, SUCTION_OPTIONS);
 fillSelect(liquidSel, LIQUID_OPTIONS);
 
-// set sensible defaults
+// sensible defaults
 suctionSel.value = '7/8"';
-liquidSel.value = '3/8"';
+liquidSel.value  = '3/8"';
 
 [suctionSel, liquidSel, lengthInp].forEach(el => el.addEventListener('input', calc));
 calc();
 </script>
 </body>
 </html>
+
